@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface DonateProduct {
   id: number;
@@ -93,8 +95,10 @@ interface Purchase {
 }
 
 export default function Index() {
+  const { user, login, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [selectedProduct, setSelectedProduct] = useState<DonateProduct | null>(null);
-  const [steamId, setSteamId] = useState('');
+  const [steamId, setSteamId] = useState(user?.steamId || '');
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [activeTab, setActiveTab] = useState('all');
 
@@ -188,6 +192,26 @@ export default function Index() {
                 </div>
               </div>
               <div className="flex items-center gap-4">
+                {isAuthenticated ? (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate('/profile')}
+                      className="border-primary/50 hover:bg-primary/10"
+                    >
+                      <Icon name="User" size={18} className="mr-2" />
+                      {user?.username}
+                    </Button>
+                  </>
+                ) : (
+                  <Button 
+                    onClick={login}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                  >
+                    <Icon name="LogIn" size={18} className="mr-2" />
+                    Войти через Steam
+                  </Button>
+                )}
                 <div className="text-right">
                   <p className="text-xs text-muted-foreground">Онлайн</p>
                   <p className="text-xl font-bold text-primary">247 игроков</p>
@@ -287,26 +311,47 @@ export default function Index() {
                     </div>
                   )}
 
-                  <div className="space-y-2">
-                    <Label htmlFor="steam-id" className="text-sm font-bold">Steam ID</Label>
-                    <Input
-                      id="steam-id"
-                      placeholder="STEAM_0:1:12345678"
-                      value={steamId}
-                      onChange={(e) => setSteamId(e.target.value)}
-                      className="bg-input border-border"
-                    />
-                    <p className="text-xs text-muted-foreground">Товар будет выдан на этот Steam ID</p>
-                  </div>
+                  {isAuthenticated ? (
+                    <div className="p-3 bg-muted rounded border border-border">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Icon name="User" size={16} className="text-primary" />
+                        <span className="text-xs font-bold">Авторизован как:</span>
+                      </div>
+                      <p className="text-sm font-bold">{user?.username}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{user?.steamId}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="steam-id" className="text-sm font-bold">Steam ID</Label>
+                      <Input
+                        id="steam-id"
+                        placeholder="STEAM_0:1:12345678"
+                        value={steamId}
+                        onChange={(e) => setSteamId(e.target.value)}
+                        className="bg-input border-border"
+                      />
+                      <p className="text-xs text-muted-foreground">Товар будет выдан на этот Steam ID</p>
+                    </div>
+                  )}
 
-                  <Button 
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-6 text-lg"
-                    disabled={!selectedProduct || !steamId.trim()}
-                    onClick={handlePurchase}
-                  >
-                    <Icon name="CreditCard" size={20} className="mr-2" />
-                    ОПЛАТИТЬ
-                  </Button>
+                  {isAuthenticated ? (
+                    <Button 
+                      className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-6 text-lg"
+                      disabled={!selectedProduct}
+                      onClick={handlePurchase}
+                    >
+                      <Icon name="CreditCard" size={20} className="mr-2" />
+                      ОПЛАТИТЬ
+                    </Button>
+                  ) : (
+                    <Button 
+                      className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold py-6 text-lg"
+                      onClick={login}
+                    >
+                      <Icon name="LogIn" size={20} className="mr-2" />
+                      ВОЙТИ ДЛЯ ПОКУПКИ
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
 
