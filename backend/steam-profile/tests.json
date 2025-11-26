@@ -1,0 +1,32 @@
+{
+  "tests": [
+    {
+      "name": "Get Steam profile by Steam ID",
+      "method": "GET",
+      "path": "/?steamid=STEAM_0:1:123456789",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "steamId": "string",
+        "username": "string",
+        "avatar": "string"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Handle OPTIONS request",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Missing steamid parameter",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

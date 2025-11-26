@@ -8,15 +8,19 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: () => void;
+  login: (steamId: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const STEAM_PROFILE_API = 'https://functions.poehali.dev/f154cc63-1ece-41e7-8114-e727e1a06e24';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('rust_donate_user');
@@ -25,15 +29,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = () => {
-    const mockUser: User = {
-      steamId: 'STEAM_0:1:123456789',
-      username: 'RustWarrior2024',
-      avatar: 'https://cdn.poehali.dev/projects/cb3e8f6c-1b8e-4556-97a9-bb095068a3e1/files/abfdffaa-9ce7-4358-b301-f60d3fc611b1.jpg'
-    };
+  const login = async (steamId: string): Promise<boolean> => {
+    setLoading(true);
     
-    setUser(mockUser);
-    localStorage.setItem('rust_donate_user', JSON.stringify(mockUser));
+    try {
+      const response = await fetch(`${STEAM_PROFILE_API}?steamid=${encodeURIComponent(steamId)}`);
+      
+      if (!response.ok) {
+        setLoading(false);
+        return false;
+      }
+      
+      const data = await response.json();
+      
+      const userData: User = {
+        steamId: data.steamId,
+        username: data.username,
+        avatar: data.avatar
+      };
+      
+      setUser(userData);
+      localStorage.setItem('rust_donate_user', JSON.stringify(userData));
+      setLoading(false);
+      return true;
+    } catch (error) {
+      console.error('Steam login error:', error);
+      setLoading(false);
+      return false;
+    }
   };
 
   const logout = () => {
@@ -42,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user, loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,7 +27,7 @@ const products: DonateProduct[] = [
     name: 'AK-47',
     description: 'Автомат Калашникова. Надёжное оружие для выживания.',
     price: 250,
-    image: 'https://cdn.poehali.dev/projects/cb3e8f6c-1b8e-4556-97a9-bb095068a3e1/files/abfdffaa-9ce7-4358-b301-f60d3fc611b1.jpg',
+    image: 'https://static.wikia.nocookie.net/play-rust/images/1/17/Assault_Rifle_icon.png',
     category: 'weapons',
     icon: 'Swords'
   },
@@ -35,7 +36,7 @@ const products: DonateProduct[] = [
     name: 'M4A1',
     description: 'Штурмовая винтовка высокой точности.',
     price: 300,
-    image: 'https://cdn.poehali.dev/projects/cb3e8f6c-1b8e-4556-97a9-bb095068a3e1/files/abfdffaa-9ce7-4358-b301-f60d3fc611b1.jpg',
+    image: 'https://static.wikia.nocookie.net/play-rust/images/d/d1/M249_icon.png',
     category: 'weapons',
     icon: 'Swords'
   },
@@ -44,7 +45,7 @@ const products: DonateProduct[] = [
     name: 'Ресурс-пак (5000)',
     description: '5000 единиц дерева, камня и металла.',
     price: 150,
-    image: 'https://cdn.poehali.dev/projects/cb3e8f6c-1b8e-4556-97a9-bb095068a3e1/files/51190b65-e7a8-48a6-b971-1b269930824e.jpg',
+    image: 'https://static.wikia.nocookie.net/play-rust/images/4/4c/Wood_icon.png',
     category: 'resources',
     icon: 'Package'
   },
@@ -53,7 +54,7 @@ const products: DonateProduct[] = [
     name: 'Ресурс-пак (10000)',
     description: '10000 единиц дерева, камня и металла.',
     price: 280,
-    image: 'https://cdn.poehali.dev/projects/cb3e8f6c-1b8e-4556-97a9-bb095068a3e1/files/51190b65-e7a8-48a6-b971-1b269930824e.jpg',
+    image: 'https://static.wikia.nocookie.net/play-rust/images/e/e9/Stones_icon.png',
     category: 'resources',
     icon: 'Package'
   },
@@ -62,7 +63,7 @@ const products: DonateProduct[] = [
     name: 'VIP Бронза (30 дней)',
     description: 'Базовые привилегии: +10% к добыче ресурсов.',
     price: 199,
-    image: 'https://cdn.poehali.dev/projects/cb3e8f6c-1b8e-4556-97a9-bb095068a3e1/files/d658e3d1-2986-4b35-a763-f492a0c9f018.jpg',
+    image: 'https://static.wikia.nocookie.net/play-rust/images/8/82/Metal_Ore_icon.png',
     category: 'vip',
     icon: 'Award'
   },
@@ -71,7 +72,7 @@ const products: DonateProduct[] = [
     name: 'VIP Серебро (30 дней)',
     description: 'Расширенные привилегии: +25% к добыче, набор оружия.',
     price: 399,
-    image: 'https://cdn.poehali.dev/projects/cb3e8f6c-1b8e-4556-97a9-bb095068a3e1/files/d658e3d1-2986-4b35-a763-f492a0c9f018.jpg',
+    image: 'https://static.wikia.nocookie.net/play-rust/images/3/37/High_Quality_Metal_Ore_icon.png',
     category: 'vip',
     icon: 'Award'
   },
@@ -80,7 +81,7 @@ const products: DonateProduct[] = [
     name: 'VIP Золото (30 дней)',
     description: 'Максимальные привилегии: +50% к добыче, эксклюзивные скины.',
     price: 799,
-    image: 'https://cdn.poehali.dev/projects/cb3e8f6c-1b8e-4556-97a9-bb095068a3e1/files/d658e3d1-2986-4b35-a763-f492a0c9f018.jpg',
+    image: 'https://static.wikia.nocookie.net/play-rust/images/c/cc/Sulfur_Ore_icon.png',
     category: 'vip',
     icon: 'Award'
   }
@@ -95,12 +96,42 @@ interface Purchase {
 }
 
 export default function Index() {
-  const { user, login, isAuthenticated } = useAuth();
+  const { user, login, isAuthenticated, loading } = useAuth();
   const navigate = useNavigate();
   const [selectedProduct, setSelectedProduct] = useState<DonateProduct | null>(null);
   const [steamId, setSteamId] = useState(user?.steamId || '');
+  const [steamIdInput, setSteamIdInput] = useState('');
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [activeTab, setActiveTab] = useState('all');
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+
+  const handleSteamLogin = async () => {
+    if (!steamIdInput.trim()) {
+      toast({
+        title: 'Ошибка',
+        description: 'Введите ваш Steam ID',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    const success = await login(steamIdInput);
+    
+    if (success) {
+      toast({
+        title: 'Успешно!',
+        description: 'Вы вошли через Steam',
+      });
+      setShowLoginDialog(false);
+      setSteamIdInput('');
+    } else {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось получить данные Steam. Проверьте Steam ID',
+        variant: 'destructive'
+      });
+    }
+  };
 
   const handlePurchase = () => {
     if (!selectedProduct) {
@@ -205,7 +236,7 @@ export default function Index() {
                   </>
                 ) : (
                   <Button 
-                    onClick={login}
+                    onClick={() => setShowLoginDialog(true)}
                     className="bg-primary hover:bg-primary/90 text-primary-foreground"
                   >
                     <Icon name="LogIn" size={18} className="mr-2" />
@@ -346,7 +377,7 @@ export default function Index() {
                   ) : (
                     <Button 
                       className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold py-6 text-lg"
-                      onClick={login}
+                      onClick={() => setShowLoginDialog(true)}
                     >
                       <Icon name="LogIn" size={20} className="mr-2" />
                       ВОЙТИ ДЛЯ ПОКУПКИ
@@ -395,6 +426,63 @@ export default function Index() {
           </div>
         </footer>
       </div>
+
+      <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
+        <DialogContent className="sm:max-w-md bg-card border-2 border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <Icon name="LogIn" size={28} className="text-primary" />
+              ВХОД ЧЕРЕЗ STEAM
+            </DialogTitle>
+            <DialogDescription>
+              Введите ваш Steam ID для входа. Мы получим ваш никнейм и аватар из Steam.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="steam-login-id" className="text-sm font-bold">Steam ID</Label>
+              <Input
+                id="steam-login-id"
+                placeholder="STEAM_0:1:12345678 или 76561198000000000"
+                value={steamIdInput}
+                onChange={(e) => setSteamIdInput(e.target.value)}
+                className="bg-input border-border font-mono"
+                onKeyDown={(e) => e.key === 'Enter' && handleSteamLogin()}
+              />
+              <p className="text-xs text-muted-foreground">
+                Найти Steam ID можно на <a href="https://steamid.io/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">steamid.io</a>
+              </p>
+            </div>
+            
+            <div className="p-3 bg-muted/50 rounded border border-border">
+              <p className="text-xs text-muted-foreground mb-2 font-bold">Поддерживаемые форматы:</p>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• STEAM_0:1:123456789</li>
+                <li>• 76561198000000000 (SteamID64)</li>
+                <li>• [U:1:246913579]</li>
+              </ul>
+            </div>
+
+            <Button 
+              onClick={handleSteamLogin}
+              disabled={loading || !steamIdInput.trim()}
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-6"
+            >
+              {loading ? (
+                <>
+                  <Icon name="Loader2" size={20} className="mr-2 animate-spin" />
+                  ЗАГРУЗКА...
+                </>
+              ) : (
+                <>
+                  <Icon name="CheckCircle" size={20} className="mr-2" />
+                  ВОЙТИ
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
